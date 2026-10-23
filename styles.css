@@ -109,25 +109,67 @@ textarea { resize: vertical; }
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
 
 .item {
+  position: relative;
+  cursor: grab;
+  transition: opacity .15s, transform .15s, box-shadow .15s;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto auto 1fr;
+  align-items: start;
   gap: 1rem;
   background: var(--surface);
   border-radius: var(--radius);
   padding: 1rem;
   box-shadow: 0 1px 3px rgba(0,0,0,.08);
 }
+.item:active { cursor: grabbing; }
+.item.dragging {
+  opacity: .45;
+  transform: scale(.98);
+  outline: 2px dashed var(--primary);
+  box-shadow: 0 8px 20px rgba(79,70,229,.25);
+}
+.item.drop-before::before,
+.item.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--primary);
+}
+.item.drop-before::before { top: -8px; }
+.item.drop-after::after { bottom: -8px; }
+
+.item.tier-gold    { --tier: #d4a017; --tier-bg: #fffbeb; --tier-badge: #fde68a; --tier-text: #92400e; }
+.item.tier-silver  { --tier: #9ca3af; --tier-bg: #f8fafc; --tier-badge: #e5e7eb; --tier-text: #374151; }
+.item.tier-bronze  { --tier: #b87333; --tier-bg: #fff7ed; --tier-badge: #fed7aa; --tier-text: #7c2d12; }
+.item.tier-premium { --tier: #7c3aed; --tier-bg: #f5f3ff; --tier-badge: #ddd6fe; --tier-text: #4c1d95; }
+.item[class*="tier-"] {
+  background: var(--tier-bg);
+  border-left: 5px solid var(--tier);
+}
+.item[class*="tier-"] .rank {
+  background: var(--tier-badge);
+  color: var(--tier-text);
+  box-shadow: 0 0 0 2px var(--tier);
+}
+
+.handle { color: var(--muted); font-size: 1.4rem; line-height: 2.6rem; user-select: none; }
+
 .rank {
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 50%;
+  min-width: 3.2rem;
+  padding: .3rem .5rem;
+  border-radius: 10px;
   background: #eef2ff;
   color: var(--primary);
-  font-weight: 700;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  line-height: 1.1;
 }
+.rank-label { font-size: .65rem; text-transform: uppercase; letter-spacing: .05em; }
+.rank-number { font-size: 1.4rem; font-weight: 700; }
 .item h3 { margin: 0; font-size: 1.1rem; }
 .item .city { color: var(--muted); font-weight: 400; }
 .meta { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: .4rem 0; font-size: .9rem; color: var(--muted); }
@@ -140,6 +182,7 @@ textarea { resize: vertical; }
 .empty { text-align: center; color: var(--muted); padding: 1.5rem; }
 
 @media (max-width: 480px) {
-  .item { grid-template-columns: 1fr; }
+  .item { grid-template-columns: auto 1fr; }
+  .item > :last-child { grid-column: 1 / -1; }
   .actions .btn { flex: 1; }
 }

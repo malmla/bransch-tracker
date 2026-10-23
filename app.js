@@ -32,6 +32,11 @@ function el(tag, className, text) {
   return node;
 }
 
+function tierFor(rank) {
+  if (applications.length >= 50) return rank >= 1 && rank <= 5 ? "tier-premium" : "";
+  return { 1: "tier-gold", 2: "tier-silver", 3: "tier-bronze" }[rank] || "";
+}
+
 function render() {
   listEl.replaceChildren();
   $("count").textContent = applications.length;
@@ -39,7 +44,17 @@ function render() {
 
   for (const app of sorted()) {
     const li = el("li", "item");
-    li.append(el("div", "rank", app.rank));
+    const tier = tierFor(app.rank);
+    if (tier) li.classList.add(tier);
+    li.draggable = true;
+    li.dataset.id = app.id;
+    li.addEventListener("dragstart", onDragStart);
+    li.addEventListener("dragend", onDragEnd);
+    li.addEventListener("dragover", onDragOver);
+    li.addEventListener("drop", onDrop);
+    const rank = el("div", "rank");
+    rank.append(el("span", "rank-label", "Rang"), el("span", "rank-number", app.rank));
+    li.append(el("div", "handle", "⠿"), rank);
 
     const body = el("div");
     const h3 = el("h3", "", app.company + " ");
@@ -75,6 +90,56 @@ function render() {
     li.append(body);
     listEl.append(li);
   }
+}
+
+let draggedId = null;
+
+function clearDropMarks() {
+  listEl.querySelectorAll(".drop-before, .drop-after").forEach((n) => n.classList.remove("drop-before", "drop-after"));
+}
+
+function isAfter(e, li) {
+  const r = li.getBoundingClientRect();
+  return e.clientY > r.top + r.height / 2;
+}
+
+function onDragStart(e) {
+  draggedId = this.dataset.id;
+  e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("text/plain", draggedId);
+  // Delay so the drag image is captured before the dimming style applies
+  requestAnimationFrame(() => this.classList.add("dragging"));
+}
+
+function onDragEnd() {
+  draggedId = null;
+  this.classList.remove("dragging");
+  clearDropMarks();
+}
+
+function onDragOver(e) {
+  if (!draggedId) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  clearDropMarks();
+  if (this.dataset.id !== draggedId) {
+    this.classList.add(isAfter(e, this) ? "drop-after" : "drop-before");
+  }
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  if (!draggedId || this.dataset.id === draggedId) return;
+  const after = isAfter(e, this);
+  const order = sorted().map((a) => a.id).filter((id) => id !== draggedId);
+  const idx = order.indexOf(this.dataset.id) + (after ? 1 : 0);
+  order.splice(idx, 0, draggedId);
+  order.forEach((id, i) => {
+    applications.find((a) => a.id === id).rank = i + 1;
+  });
+  save();
+  draggedId = null;
+  render();
 }
 
 function resetForm() {
