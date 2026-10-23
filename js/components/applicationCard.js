@@ -8,13 +8,13 @@ const actionButton = (text, action, label, extraClass = "") =>
   h("button", { type: "button", class: `btn small ${extraClass}`.trim(), "data-action": action, "aria-label": label }, text);
 
 /** Everything that affects how a card looks; used to skip rebuilding unchanged cards. */
-export function cardSignature({ app, tier, priority }) {
+export function cardSignature({ app, tier }) {
   return JSON.stringify([
-    app.rank, app.company, app.city, app.contactPerson, app.email, app.phone, app.motivation, app.notes, tier, priority,
+    app.rank, app.company, app.city, app.contactPerson, app.email, app.phone, app.motivation, app.notes, tier,
   ]);
 }
 
-export function createCard({ app, tier, priority }) {
+export function createCard({ app, tier }) {
   const name = app.company || "företag utan namn";
 
   const rank = h(
@@ -33,9 +33,7 @@ export function createCard({ app, tier, priority }) {
     h("span", { class: "city" }, app.city ? `· ${app.city}` : missing("Ort"))
   );
 
-  const email = app.email
-    ? h("a", { href: `mailto:${app.email}`, class: priority ? "email-priority" : null }, app.email)
-    : missing("E-post");
+  const email = app.email ? h("a", { href: `mailto:${app.email}` }, app.email) : missing("E-post");
   const phone = app.phone
     ? h("a", { href: `tel:${app.phone.replace(/[^\d+]/g, "")}` }, app.phone)
     : missing("Telefonnummer");
@@ -44,7 +42,6 @@ export function createCard({ app, tier, priority }) {
     { class: "meta" },
     h("span", {}, app.contactPerson ? `👤 ${app.contactPerson}` : missing("Kontaktperson")),
     email,
-    priority && h("span", { class: "priority-badge" }, "Prioriterad kontakt"),
     phone
   );
 

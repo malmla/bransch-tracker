@@ -3,7 +3,7 @@ import test from "node:test";
 import { isIncomplete, validateValues } from "../js/model/application.js";
 import { createFilters, matchesFilters } from "../js/model/filters.js";
 import { planImport } from "../js/model/importPlan.js";
-import { priorityLimit, sortApplications, tierFor } from "../js/model/ranking.js";
+import { sortApplications, tierFor } from "../js/model/ranking.js";
 import { createStorage } from "../js/services/storage.js";
 import { createStore } from "../js/state/store.js";
 
@@ -100,7 +100,7 @@ test("company matching ignores case and whitespace; selected Excel conflicts pre
   assert.equal(ikea.city, "Stockholm");
 });
 
-test("filters combine with AND and rank badges honor the 50-application threshold", () => {
+test("filters combine with AND and rank colors honor the 50-application threshold", () => {
   const filters = createFilters();
   filters.email = "missing";
   filters.phone = "has";
@@ -113,8 +113,6 @@ test("filters combine with AND and rank badges honor the 50-application threshol
   assert.equal(tierFor(4, 49), null);
   assert.equal(tierFor(5, 50), "premium");
   assert.equal(tierFor(6, 50), null);
-  assert.equal(priorityLimit(49), 15);
-  assert.equal(priorityLimit(50), 30);
 });
 
 test("store supports at least 250 records and keeps their order ranks unique", () => {

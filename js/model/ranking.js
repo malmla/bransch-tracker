@@ -18,8 +18,6 @@ export function tierFor(rank, total) {
   return { 1: "gold", 2: "silver", 3: "bronze" }[rank] ?? null;
 }
 
-export const priorityLimit = (total) => (total >= PREMIUM_THRESHOLD ? 30 : 15);
-
 /** Moves `id` next to `targetId` in an ordered id list. Returns null when nothing would change. */
 export function moveInOrder(ids, id, targetId, after) {
   if (id === targetId || !ids.includes(id) || !ids.includes(targetId)) return null;

@@ -7,7 +7,7 @@ import { createFilterBar } from "./components/filterBar.js";
 import { createThemeToggle } from "./components/themeToggle.js";
 import { isFiltering, matchesFilters } from "./model/filters.js";
 import { planImport } from "./model/importPlan.js";
-import { priorityLimit, sortApplications, tierFor } from "./model/ranking.js";
+import { sortApplications, tierFor } from "./model/ranking.js";
 import { exportWorkbook, ExcelError, importWorkbook } from "./services/excel.js";
 import { createStorage } from "./services/storage.js";
 import { createStore } from "./state/store.js";
@@ -79,14 +79,13 @@ export function startApp() {
 
   function render({ applications, filters }) {
     const total = applications.length;
-    const limit = priorityLimit(total);
     const filtering = isFiltering(filters);
 
-    // Tier and priority depend on the position in the full list, not in the filtered one
+    // Rank colors depend on each application's position in the full list, not the filtered list
     const visible = [];
-    sortApplications(applications).forEach((app, index) => {
+    sortApplications(applications).forEach((app) => {
       if (matchesFilters(app, filters)) {
-        visible.push({ app, tier: tierFor(app.rank, total), priority: index < limit && Boolean(app.email) });
+        visible.push({ app, tier: tierFor(app.rank, total) });
       }
     });
 
