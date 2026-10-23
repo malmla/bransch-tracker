@@ -215,6 +215,84 @@ form.addEventListener("submit", (e) => {
 
 $("cancel-btn").addEventListener("click", resetForm);
 
+const IMPORT_COLUMNS = {
+  rank: "Rangordning",
+  company: "Företag",
+  city: "Ort",
+  contact: "Kontaktperson",
+  email: "E-post",
+  phone: "Telefonnummer",
+  motivation: "Kort presentation",
+  notes: "Anteckningar",
+};
+
+function showImportMessage(lines, ok = false) {
+  const msg = $("import-msg");
+  msg.replaceChildren(...lines.map((l) => el("div", "", l)));
+  msg.style.color = ok ? "#166534" : "";
+  msg.hidden = !lines.length;
+}
+
+function parseWorkbook(buffer) {
+  const book = XLSX.read(buffer, { type: "array" });
+  const sheet = book.Sheets[book.SheetNames[0]];
+  if (!sheet) throw new Error("Filen innehåller inget kalkylblad.");
+
+  const headers = (XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" })[0] ?? []).map((h) => String(h).trim());
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false });
+  const missing = Object.values(IMPORT_COLUMNS).filter((h) => !headers.includes(h));
+  if (missing.length) {
+    throw new Error(`Felaktig filstruktur. Kolumner saknas: ${missing.join(", ")}.`);
+  }
+  if (!rows.length) throw new Error("Filen innehåller inga rader att importera.");
+
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const errors = [];
+  const imported = rows.map((row, i) => {
+    const app = { id: crypto.randomUUID?.() ?? `${Date.now()}-${i}` };
+    for (const [field, header] of Object.entries(IMPORT_COLUMNS)) {
+      app[field] = String(row[header] ?? "").trim();
+    }
+    const line = i + 2;
+    const empty = REQUIRED.filter((f) => !app[f]).map((f) => IMPORT_COLUMNS[f]);
+    if (empty.length) errors.push(`Rad ${line}: obligatoriska fält saknas (${empty.join(", ")}).`);
+    if (app.rank && !(Number(app.rank) >= 1)) errors.push(`Rad ${line}: Rangordning måste vara ett tal från 1.`);
+    if (app.email && !emailRe.test(app.email)) errors.push(`Rad ${line}: ogiltig e-postadress.`);
+    app.rank = Number(app.rank);
+    return app;
+  });
+  if (errors.length) {
+    const shown = errors.slice(0, 10);
+    if (errors.length > 10) shown.push(`…och ${errors.length - 10} fel till.`);
+    throw Object.assign(new Error("Importen avbröts, inga ansökningar lades till."), { details: shown });
+  }
+  return imported;
+}
+
+$("import-btn").addEventListener("click", () => $("import-file").click());
+
+$("import-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  if (typeof XLSX === "undefined") {
+    showImportMessage(["Excel-biblioteket kunde inte laddas. Kontrollera din internetanslutning."]);
+    return;
+  }
+  try {
+    const imported = parseWorkbook(await file.arrayBuffer());
+    applications.push(...imported);
+    // Renumber so imported ranks never collide with existing ones
+    sorted().forEach((a, i) => (a.rank = i + 1));
+    save();
+    render();
+    showImportMessage([`${imported.length} ansökningar importerades.`], true);
+  } catch (err) {
+    const base = err.details ? err.message : err.message?.startsWith("Felaktig") || err.message?.startsWith("Filen") ? err.message : "Felaktig filstruktur: filen kunde inte läsas som en Excel-fil.";
+    showImportMessage([base, ...(err.details ?? [])]);
+  }
+});
+
 $("export-btn").addEventListener("click", () => {
   if (typeof XLSX === "undefined") {
     alert("Excel-biblioteket kunde inte laddas. Kontrollera din internetanslutning.");

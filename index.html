@@ -54,7 +54,10 @@
     <section>
       <h2>Ansökningar <span id="count" class="badge">0</span>
         <button type="button" class="btn small export-btn" id="export-btn">Exportera till Excel</button>
+        <button type="button" class="btn small" id="import-btn">Importera från Excel</button>
+        <input type="file" id="import-file" accept=".xlsx,.xls" hidden>
       </h2>
+      <p id="import-msg" class="error" role="alert" hidden></p>
       <ul id="list" class="list"></ul>
       <p id="empty" class="empty">Inga ansökningar ännu.</p>
     </section>
