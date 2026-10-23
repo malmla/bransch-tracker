@@ -64,6 +64,12 @@
       </section>
 
       <section>
+        <div class="dashboard" aria-label="Översikt">
+          <div class="stat"><span class="stat-value" id="stat-total">0</span><span class="stat-label">Ansökningar totalt</span></div>
+          <div class="stat"><span class="stat-value" id="stat-contact">0</span><span class="stat-label">Med kontaktperson</span></div>
+          <div class="stat"><span class="stat-value" id="stat-email">0</span><span class="stat-label">Med e-post</span></div>
+          <div class="stat"><span class="stat-value" id="stat-motivation">0</span><span class="stat-label">Med presentation/motivering</span></div>
+        </div>
         <h2>
           Ansökningar <span id="count" class="badge">0</span>
           <button type="button" class="btn small export-btn" id="export-btn">
@@ -75,6 +81,25 @@
           <input type="file" id="import-file" accept=".xlsx,.xls" hidden />
         </h2>
         <p id="import-msg" class="error" role="alert" hidden></p>
+        <div class="filters" aria-label="Filter">
+          <label>Kontaktperson
+            <select id="filter-contact" data-filter="contact">
+              <option value="">Alla</option><option value="has">Har</option><option value="missing">Saknas</option>
+            </select>
+          </label>
+          <label>E-post
+            <select id="filter-email" data-filter="email">
+              <option value="">Alla</option><option value="has">Har</option><option value="missing">Saknas</option>
+            </select>
+          </label>
+          <label>Telefon
+            <select id="filter-phone" data-filter="phone">
+              <option value="">Alla</option><option value="has">Har</option><option value="missing">Saknas</option>
+            </select>
+          </label>
+          <button type="button" class="btn small" id="filter-reset">Rensa filter</button>
+          <span id="filter-info" class="filter-info" hidden></span>
+        </div>
         <ul id="list" class="list"></ul>
         <p id="empty" class="empty">Inga ansökningar ännu.</p>
       </section>

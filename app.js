@@ -51,13 +51,34 @@ function missingTag(label) {
   return el("span", "missing", `${label} saknas`);
 }
 
+function renderDashboard() {
+  const has = (f) => applications.filter((a) => String(a[f] ?? "").trim()).length;
+  $("stat-total").textContent = applications.length;
+  $("stat-contact").textContent = has("contact");
+  $("stat-email").textContent = has("email");
+  $("stat-motivation").textContent = has("motivation");
+}
+
+const filters = { contact: "", email: "", phone: "" };
+
+function matchesFilters(app) {
+  return Object.entries(filters).every(([field, mode]) => {
+    if (!mode) return true;
+    const filled = Boolean(String(app[field] ?? "").trim());
+    return mode === "has" ? filled : !filled;
+  });
+}
+
 function render() {
+  renderDashboard();
   listEl.replaceChildren();
   $("count").textContent = applications.length;
-  $("empty").hidden = applications.length > 0;
-
+  const filtering = Object.values(filters).some(Boolean);
+  let shown = 0;
   const priorityCount = applications.length >= 50 ? 30 : 15;
   for (const [index, app] of sorted().entries()) {
+    if (!matchesFilters(app)) continue;
+    shown++;
     const li = el("li", "item");
     const tier = tierFor(app.rank);
     if (tier) li.classList.add(tier);
@@ -115,7 +136,30 @@ function render() {
     li.append(body);
     listEl.append(li);
   }
+
+  const empty = $("empty");
+  empty.hidden = shown > 0;
+  empty.textContent = applications.length && !shown ? "Inga ansökningar matchar filtret." : "Inga ansökningar ännu.";
+  $("filter-reset").hidden = !filtering;
+  const info = $("filter-info");
+  info.hidden = !filtering;
+  info.textContent = `Visar ${shown} av ${applications.length}`;
 }
+
+document.querySelectorAll("[data-filter]").forEach((select) => {
+  select.addEventListener("change", () => {
+    filters[select.dataset.filter] = select.value;
+    render();
+  });
+});
+
+$("filter-reset").addEventListener("click", () => {
+  document.querySelectorAll("[data-filter]").forEach((s) => {
+    s.value = "";
+    filters[s.dataset.filter] = "";
+  });
+  render();
+});
 
 let draggedId = null;
 
