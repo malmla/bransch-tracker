@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LIA-tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>LIA-tracker</h1>
+    <p>Håll koll på dina ansökningar om Lärande i arbete</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2 id="form-title">Ny ansökan</h2>
+      <form id="application-form" novalidate>
+        <input type="hidden" id="id">
+        <div class="grid">
+          <label>Rangordning
+            <input type="number" id="rank" min="1" step="1" required>
+          </label>
+          <label>Företag
+            <input type="text" id="company" required>
+          </label>
+          <label>Ort
+            <input type="text" id="city" required>
+          </label>
+          <label>Kontaktperson
+            <input type="text" id="contact" required>
+          </label>
+          <label>E-post
+            <input type="email" id="email" required>
+          </label>
+          <label>Telefonnummer
+            <input type="tel" id="phone" required>
+          </label>
+        </div>
+        <label>Kort presentation/motivering <span class="optional">(frivilligt)</span>
+          <textarea id="motivation" rows="3"></textarea>
+        </label>
+        <label>Anteckningar
+          <textarea id="notes" rows="3"></textarea>
+        </label>
+        <p id="error" class="error" role="alert" hidden></p>
+        <div class="actions">
+          <button type="submit" class="btn primary" id="submit-btn">Spara ansökan</button>
+          <button type="button" class="btn" id="cancel-btn" hidden>Avbryt</button>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <h2>Ansökningar <span id="count" class="badge">0</span></h2>
+      <ul id="list" class="list"></ul>
+      <p id="empty" class="empty">Inga ansökningar ännu.</p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
