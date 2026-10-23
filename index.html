@@ -1,69 +1,86 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="sv">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LIA-tracker</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <header class="app-header">
-    <h1>LIA-tracker</h1>
-    <p>Håll koll på dina ansökningar om Lärande i arbete</p>
-  </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LIA-tracker</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Branschkartläggning-tracker</h1>
+    </header>
 
-  <main>
-    <section class="card">
-      <h2 id="form-title">Ny ansökan</h2>
-      <form id="application-form" novalidate>
-        <input type="hidden" id="id">
-        <div class="grid">
-          <label>Rangordning
-            <input type="number" id="rank" min="1" step="1" required>
+    <main>
+      <section class="card">
+        <h2 id="form-title">Nytt företag</h2>
+        <form id="application-form" novalidate>
+          <input type="hidden" id="id" />
+          <div class="grid">
+            <label
+              >Rangordning
+              <input type="number" id="rank" min="1" step="1" required />
+            </label>
+            <label
+              >Företag
+              <input type="text" id="company" required />
+            </label>
+            <label
+              >Ort
+              <input type="text" id="city" required />
+            </label>
+            <label
+              >Kontaktperson
+              <input type="text" id="contact" required />
+            </label>
+            <label
+              >E-post
+              <input type="email" id="email" required />
+            </label>
+            <label
+              >Telefonnummer
+              <input type="tel" id="phone" required />
+            </label>
+          </div>
+          <label
+            >Kort presentation/motivering
+            <span class="optional">(frivilligt)</span>
+            <textarea id="motivation" rows="3"></textarea>
           </label>
-          <label>Företag
-            <input type="text" id="company" required>
+          <label
+            >Anteckningar
+            <textarea id="notes" rows="3"></textarea>
           </label>
-          <label>Ort
-            <input type="text" id="city" required>
-          </label>
-          <label>Kontaktperson
-            <input type="text" id="contact" required>
-          </label>
-          <label>E-post
-            <input type="email" id="email" required>
-          </label>
-          <label>Telefonnummer
-            <input type="tel" id="phone" required>
-          </label>
-        </div>
-        <label>Kort presentation/motivering <span class="optional">(frivilligt)</span>
-          <textarea id="motivation" rows="3"></textarea>
-        </label>
-        <label>Anteckningar
-          <textarea id="notes" rows="3"></textarea>
-        </label>
-        <p id="error" class="error" role="alert" hidden></p>
-        <div class="actions">
-          <button type="submit" class="btn primary" id="submit-btn">Spara ansökan</button>
-          <button type="button" class="btn" id="cancel-btn" hidden>Avbryt</button>
-        </div>
-      </form>
-    </section>
+          <p id="error" class="error" role="alert" hidden></p>
+          <div class="actions">
+            <button type="submit" class="btn primary" id="submit-btn">
+              Spara ansökan
+            </button>
+            <button type="button" class="btn" id="cancel-btn" hidden>
+              Avbryt
+            </button>
+          </div>
+        </form>
+      </section>
 
-    <section>
-      <h2>Ansökningar <span id="count" class="badge">0</span>
-        <button type="button" class="btn small export-btn" id="export-btn">Exportera till Excel</button>
-        <button type="button" class="btn small" id="import-btn">Importera från Excel</button>
-        <input type="file" id="import-file" accept=".xlsx,.xls" hidden>
-      </h2>
-      <p id="import-msg" class="error" role="alert" hidden></p>
-      <ul id="list" class="list"></ul>
-      <p id="empty" class="empty">Inga ansökningar ännu.</p>
-    </section>
-  </main>
+      <section>
+        <h2>
+          Ansökningar <span id="count" class="badge">0</span>
+          <button type="button" class="btn small export-btn" id="export-btn">
+            Exportera till Excel
+          </button>
+          <button type="button" class="btn small" id="import-btn">
+            Importera från Excel
+          </button>
+          <input type="file" id="import-file" accept=".xlsx,.xls" hidden />
+        </h2>
+        <p id="import-msg" class="error" role="alert" hidden></p>
+        <ul id="list" class="list"></ul>
+        <p id="empty" class="empty">Inga ansökningar ännu.</p>
+      </section>
+    </main>
 
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="app.js"></script>
-</body>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>
