@@ -215,6 +215,8 @@ form.addEventListener("submit", (e) => {
 
 $("cancel-btn").addEventListener("click", resetForm);
 
+const MOTIVATION_HEADER = "Kort presentation av företaget samt motivering till topp 1-3 / 1-5";
+
 const IMPORT_COLUMNS = {
   rank: "Rangordning",
   company: "Företag",
@@ -222,7 +224,7 @@ const IMPORT_COLUMNS = {
   contact: "Kontaktperson",
   email: "E-post",
   phone: "Telefonnummer",
-  motivation: "Kort presentation",
+  motivation: MOTIVATION_HEADER,
   notes: "Anteckningar",
 };
 
@@ -240,7 +242,9 @@ function parseWorkbook(buffer) {
 
   const headers = (XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" })[0] ?? []).map((h) => String(h).trim());
   const rows = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false });
-  const missing = Object.values(IMPORT_COLUMNS).filter((h) => !headers.includes(h));
+  const missing = Object.entries(IMPORT_COLUMNS)
+    .filter(([field, header]) => field !== "notes" && !headers.includes(header))
+    .map(([, header]) => header);
   if (missing.length) {
     throw new Error(`Felaktig filstruktur. Kolumner saknas: ${missing.join(", ")}.`);
   }
@@ -309,7 +313,7 @@ $("export-btn").addEventListener("click", () => {
     Kontaktperson: a.contact,
     "E-post": a.email,
     Telefonnummer: a.phone,
-    "Kort presentation": a.motivation || "",
+    [MOTIVATION_HEADER]: a.motivation || "",
     Anteckningar: a.notes || "",
   }));
   const sheet = XLSX.utils.json_to_sheet(rows);
