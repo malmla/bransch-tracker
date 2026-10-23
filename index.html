@@ -31,7 +31,7 @@
             </label>
             <label
               >Kontaktperson
-              <input type="text" id="contact" />
+              <input type="text" id="contactPerson" />
             </label>
             <label
               >E-post
@@ -83,7 +83,7 @@
         <p id="import-msg" class="error" role="alert" hidden></p>
         <div class="filters" aria-label="Filter">
           <label>Kontaktperson
-            <select id="filter-contact" data-filter="contact">
+            <select id="filter-contact" data-filter="contactPerson">
               <option value="">Alla</option><option value="has">Har</option><option value="missing">Saknas</option>
             </select>
           </label>
@@ -104,6 +104,20 @@
         <p id="empty" class="empty">Inga ansökningar ännu.</p>
       </section>
     </main>
+
+    <dialog id="conflict-dialog" class="dialog">
+      <h2>Företag finns redan</h2>
+      <p>Dessa företag i Excel-filen finns redan i listan. Välj vilken version som ska gälla.</p>
+      <div id="conflict-list"></div>
+      <div class="actions">
+        <button type="button" class="btn small" id="conflict-all-keep">Behåll alla befintliga</button>
+        <button type="button" class="btn small" id="conflict-all-excel">Använd alla från Excel</button>
+      </div>
+      <div class="actions dialog-footer">
+        <button type="button" class="btn primary" id="conflict-confirm">Fortsätt importen</button>
+        <button type="button" class="btn" id="conflict-cancel">Avbryt</button>
+      </div>
+    </dialog>
 
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script src="app.js"></script>
