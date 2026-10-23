@@ -175,6 +175,23 @@ textarea { resize: vertical; }
 .meta { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: .4rem 0; font-size: .9rem; color: var(--muted); }
 .meta a { color: var(--primary); text-decoration: none; }
 .meta a:hover { text-decoration: underline; }
+.meta a.email-priority {
+  color: #166534;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  padding: 0 .4rem;
+  font-weight: 600;
+}
+.priority-badge {
+  background: #16a34a;
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: .05rem .6rem;
+  align-self: center;
+}
 .text { margin: .4rem 0 0; font-size: .92rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 .text strong { font-size: .8rem; text-transform: uppercase; color: var(--muted); display: block; }
 .item .actions { margin-top: .75rem; }

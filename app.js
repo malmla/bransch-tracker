@@ -42,7 +42,8 @@ function render() {
   $("count").textContent = applications.length;
   $("empty").hidden = applications.length > 0;
 
-  for (const app of sorted()) {
+  const priorityCount = applications.length >= 50 ? 30 : 15;
+  for (const [index, app] of sorted().entries()) {
     const li = el("li", "item");
     const tier = tierFor(app.rank);
     if (tier) li.classList.add(tier);
@@ -67,7 +68,13 @@ function render() {
     mail.href = "mailto:" + app.email;
     const tel = el("a", "", app.phone);
     tel.href = "tel:" + app.phone.replace(/[^\d+]/g, "");
-    meta.append(mail, tel);
+    if (index < priorityCount) {
+      mail.classList.add("email-priority");
+      const badge = el("span", "priority-badge", "Prioriterad kontakt");
+      meta.append(mail, badge, tel);
+    } else {
+      meta.append(mail, tel);
+    }
     body.append(meta);
 
     for (const [label, value] of [["Motivering", app.motivation], ["Anteckningar", app.notes]]) {
