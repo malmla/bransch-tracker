@@ -1,6 +1,7 @@
 const STORAGE_KEY = "lia-applications";
 const FIELDS = ["rank", "company", "city", "contact", "email", "phone", "motivation", "notes"];
-const REQUIRED = ["rank", "company", "city", "contact", "email", "phone"];
+const REQUIRED = ["company"];
+const CONTACT_FIELDS = ["rank", "city", "contact", "email", "phone"];
 
 const $ = (id) => document.getElementById(id);
 const form = $("application-form");
@@ -21,8 +22,17 @@ function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(applications));
 }
 
+function rankValue(app) {
+  return Number.isFinite(app.rank) && app.rank !== null ? app.rank : Infinity;
+}
+
 function sorted() {
-  return [...applications].sort((a, b) => a.rank - b.rank || a.company.localeCompare(b.company, "sv"));
+  return [...applications].sort((a, b) => {
+    const ra = rankValue(a);
+    const rb = rankValue(b);
+    if (ra !== rb) return ra < rb ? -1 : 1;
+    return a.company.localeCompare(b.company, "sv");
+  });
 }
 
 function el(tag, className, text) {
@@ -35,6 +45,10 @@ function el(tag, className, text) {
 function tierFor(rank) {
   if (applications.length >= 50) return rank >= 1 && rank <= 5 ? "tier-premium" : "";
   return { 1: "tier-gold", 2: "tier-silver", 3: "tier-bronze" }[rank] || "";
+}
+
+function missingTag(label) {
+  return el("span", "missing", `${label} saknas`);
 }
 
 function render() {
@@ -54,21 +68,25 @@ function render() {
     li.addEventListener("dragover", onDragOver);
     li.addEventListener("drop", onDrop);
     const rank = el("div", "rank");
-    rank.append(el("span", "rank-label", "Rang"), el("span", "rank-number", app.rank));
+    rank.append(el("span", "rank-label", "Rang"), el("span", "rank-number", app.rank ?? "–"));
     li.append(el("div", "handle", "⠿"), rank);
 
     const body = el("div");
-    const h3 = el("h3", "", app.company + " ");
-    h3.append(el("span", "city", "· " + app.city));
+    const h3 = el("h3", "", "");
+    h3.append(app.company ? document.createTextNode(app.company + " ") : missingTag("Företag"));
+    h3.append(el("span", "city", ""));
+    h3.lastChild.append(app.city ? document.createTextNode("· " + app.city) : missingTag("Ort"));
     body.append(h3);
 
     const meta = el("div", "meta");
-    meta.append(el("span", "", "👤 " + app.contact));
-    const mail = el("a", "", app.email);
-    mail.href = "mailto:" + app.email;
-    const tel = el("a", "", app.phone);
-    tel.href = "tel:" + app.phone.replace(/[^\d+]/g, "");
-    if (index < priorityCount) {
+    const contact = el("span", "");
+    contact.append(app.contact ? document.createTextNode("👤 " + app.contact) : missingTag("Kontaktperson"));
+    meta.append(contact);
+    const mail = app.email ? el("a", "", app.email) : missingTag("E-post");
+    if (app.email) mail.href = "mailto:" + app.email;
+    const tel = app.phone ? el("a", "", app.phone) : missingTag("Telefonnummer");
+    if (app.phone) tel.href = "tel:" + app.phone.replace(/[^\d+]/g, "");
+    if (index < priorityCount && app.email) {
       mail.classList.add("email-priority");
       const badge = el("span", "priority-badge", "Prioriterad kontakt");
       meta.append(mail, badge, tel);
@@ -187,22 +205,28 @@ form.addEventListener("submit", (e) => {
 
   let valid = true;
   for (const f of FIELDS) $(f).classList.remove("invalid");
-  for (const f of REQUIRED) {
-    if (!values[f] || !$(f).checkValidity()) {
+  for (const f of FIELDS) {
+    const missing = REQUIRED.includes(f) && !values[f];
+    const badValue = values[f] && !$(f).checkValidity();
+    if (missing || badValue) {
       $(f).classList.add("invalid");
       valid = false;
     }
   }
   const error = $("error");
   if (!valid) {
-    error.textContent = "Fyll i alla obligatoriska fält med giltiga värden.";
+    error.textContent = "Företag är obligatoriskt, och ifyllda fält måste ha giltiga värden.";
     error.hidden = false;
     return;
   }
   error.hidden = true;
 
-  values.rank = Number(values.rank);
+  values.rank = values.rank ? Number(values.rank) : null;
   const id = $("id").value;
+  if (values.rank === null) {
+    const others = applications.filter((a) => a.id !== id).map((a) => a.rank).filter(Number.isFinite);
+    values.rank = others.length ? Math.max(...others) + 1 : 1;
+  }
   if (id) {
     applications = applications.map((a) => (a.id === id ? { ...a, ...values } : a));
   } else {
@@ -252,19 +276,20 @@ function parseWorkbook(buffer) {
 
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const errors = [];
-  const imported = rows.map((row, i) => {
+  const imported = [];
+  rows.forEach((row, i) => {
     const app = { id: crypto.randomUUID?.() ?? `${Date.now()}-${i}` };
     for (const [field, header] of Object.entries(IMPORT_COLUMNS)) {
       app[field] = String(row[header] ?? "").trim();
     }
+    if (!FIELDS.some((f) => f !== "rank" && app[f])) return;
     const line = i + 2;
-    const empty = REQUIRED.filter((f) => !app[f]).map((f) => IMPORT_COLUMNS[f]);
-    if (empty.length) errors.push(`Rad ${line}: obligatoriska fält saknas (${empty.join(", ")}).`);
     if (app.rank && !(Number(app.rank) >= 1)) errors.push(`Rad ${line}: Rangordning måste vara ett tal från 1.`);
     if (app.email && !emailRe.test(app.email)) errors.push(`Rad ${line}: ogiltig e-postadress.`);
-    app.rank = Number(app.rank);
-    return app;
+    app.rank = app.rank ? Number(app.rank) : null;
+    imported.push(app);
   });
+  if (!imported.length && !errors.length) throw new Error("Filen innehåller inga rader att importera.");
   if (errors.length) {
     const shown = errors.slice(0, 10);
     if (errors.length > 10) shown.push(`…och ${errors.length - 10} fel till.`);
@@ -290,7 +315,11 @@ $("import-file").addEventListener("change", async (e) => {
     sorted().forEach((a, i) => (a.rank = i + 1));
     save();
     render();
-    showImportMessage([`${imported.length} ansökningar importerades.`], true);
+    const incomplete = imported.filter((a) => REQUIRED.concat(CONTACT_FIELDS).some((f) => a[f] === "" || a[f] === null)).length;
+    showImportMessage([
+      `${imported.length} ansökningar importerades.`,
+      ...(incomplete ? [`${incomplete} av dem har tomma fält, markerade med "saknas" i listan.`] : []),
+    ], true);
   } catch (err) {
     const base = err.details ? err.message : err.message?.startsWith("Felaktig") || err.message?.startsWith("Filen") ? err.message : "Felaktig filstruktur: filen kunde inte läsas som en Excel-fil.";
     showImportMessage([base, ...(err.details ?? [])]);

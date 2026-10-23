@@ -198,6 +198,18 @@ textarea { resize: vertical; }
 
 .export-btn { margin-left: auto; }
 
+.missing {
+  display: inline-block;
+  background: #fef2f2;
+  color: var(--danger);
+  border: 1px dashed #f87171;
+  border-radius: 6px;
+  padding: 0 .4rem;
+  font-size: .8rem;
+  font-weight: 600;
+}
+.item h3 .missing { font-size: .85rem; }
+
 .empty { text-align: center; color: var(--muted); padding: 1.5rem; }
 
 @media (max-width: 480px) {
