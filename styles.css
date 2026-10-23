@@ -196,6 +196,8 @@ textarea { resize: vertical; }
 .text strong { font-size: .8rem; text-transform: uppercase; color: var(--muted); display: block; }
 .item .actions { margin-top: .75rem; }
 
+.export-btn { margin-left: auto; }
+
 .empty { text-align: center; color: var(--muted); padding: 1.5rem; }
 
 @media (max-width: 480px) {

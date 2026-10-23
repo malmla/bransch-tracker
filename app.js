@@ -215,4 +215,30 @@ form.addEventListener("submit", (e) => {
 
 $("cancel-btn").addEventListener("click", resetForm);
 
+$("export-btn").addEventListener("click", () => {
+  if (typeof XLSX === "undefined") {
+    alert("Excel-biblioteket kunde inte laddas. Kontrollera din internetanslutning.");
+    return;
+  }
+  if (!applications.length) {
+    alert("Det finns inga ansökningar att exportera.");
+    return;
+  }
+  const rows = sorted().map((a) => ({
+    Rangordning: a.rank,
+    Företag: a.company,
+    Ort: a.city,
+    Kontaktperson: a.contact,
+    "E-post": a.email,
+    Telefonnummer: a.phone,
+    "Kort presentation": a.motivation || "",
+    Anteckningar: a.notes || "",
+  }));
+  const sheet = XLSX.utils.json_to_sheet(rows);
+  sheet["!cols"] = [10, 25, 18, 22, 28, 18, 45, 45].map((wch) => ({ wch }));
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Ansökningar");
+  XLSX.writeFile(book, "lia-ansokningar.xlsx");
+});
+
 render();
