@@ -4,7 +4,9 @@ import { normalizeName } from "../utils/text.js";
 function isExactMatch(existing, row) {
   const existingValues = cleanValues(existing);
   const importedValues = cleanValues(row);
-  return FIELDS.every((field) => existingValues[field] === importedValues[field]);
+  return FIELDS
+    .filter((field) => field !== "company")
+    .every((field) => existingValues[field] === importedValues[field]);
 }
 
 /**
@@ -21,10 +23,14 @@ export function planImport(existing, imported) {
   const conflicts = [];
   const unchanged = [];
   for (const row of imported) {
-    const match = byName.get(normalizeName(row.company));
+    const key = normalizeName(row.company);
+    const match = byName.get(key);
     if (match && isExactMatch(match, row)) unchanged.push({ existing: match, row });
     else if (match) conflicts.push({ existing: match, row });
-    else fresh.push(row);
+    else {
+      fresh.push(row);
+      if (key) byName.set(key, row);
+    }
   }
   return { fresh, conflicts, unchanged };
 }

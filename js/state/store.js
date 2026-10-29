@@ -6,6 +6,7 @@ import {
 } from "../model/application.js";
 import { createFilters } from "../model/filters.js";
 import { assignRanks, moveInOrder, nextRank, sortApplications } from "../model/ranking.js";
+import { normalizeName } from "../utils/text.js";
 
 /**
  * Single source of truth. Applications are treated as immutable: every change produces
@@ -53,6 +54,16 @@ export function createStore({ storage, now = () => new Date().toISOString(), onS
       if (id && !current) {
         return { ok: false, errors: { _form: "Företaget finns inte längre och kan inte uppdateras." } };
       }
+      const companyKey = normalizeName(clean.company);
+      if (apps.some((a) => a.id !== id && normalizeName(a.company) === companyKey)) {
+        return {
+          ok: false,
+          errors: {
+            company:
+              "Företaget finns redan. Lägg till avdelning eller annan särskiljande information i företagsnamnet.",
+          },
+        };
+      }
       const previousRank = current?.rank ?? null;
       clean.rank ??= nextRank(apps, id);
 
@@ -99,28 +110,55 @@ export function createStore({ storage, now = () => new Date().toISOString(), onS
     },
 
     /**
-     * Adds `fresh` applications and, per conflict, either keeps the existing one ("keep")
-     * or overwrites it with the Excel row ("excel").
+     * Adds new applications and applies each conflict as an update or a separately named entry.
      */
     applyImport(fresh, conflicts, choices) {
       const t = now();
       const updates = new Map();
+      const imported = new Map(fresh.map((app) => [app.id, app]));
+      const separate = [];
       conflicts.forEach(({ existing, row }, i) => {
-        if (choices[i] !== "excel") return;
+        const choice = choices[i];
         const fields = cleanValues(row);
-        updates.set(existing.id, { ...existing, ...fields, rank: row.rank ?? existing.rank, updatedAt: t });
+        if (choice.action === "new") {
+          separate.push(createApplication({ ...row, company: choice.company }, t));
+        } else if (choice.action === "update") {
+          const base = updates.get(existing.id) ?? imported.get(existing.id) ?? existing;
+          const updated = {
+            ...base,
+            ...fields,
+            id: base.id,
+            createdAt: base.createdAt,
+            rank: row.rank ?? base.rank,
+            updatedAt: t,
+          };
+          if (updates.has(existing.id) || state.applications.some((app) => app.id === existing.id)) {
+            updates.set(existing.id, updated);
+          } else {
+            imported.set(existing.id, updated);
+          }
+        } else {
+          throw new Error("Importvalet saknas eller är ogiltigt.");
+        }
       });
 
-      const merged = [...state.applications.map((a) => updates.get(a.id) ?? a), ...fresh];
-      const keepTimestamp = new Set([...updates.keys(), ...fresh.map((a) => a.id)]);
+      const merged = [
+        ...state.applications.map((a) => updates.get(a.id) ?? a),
+        ...imported.values(),
+        ...separate,
+      ];
+      const keepTimestamp = new Set([
+        ...updates.keys(),
+        ...imported.keys(),
+        ...separate.map((app) => app.id),
+      ]);
       const ranked = assignRanks(merged, sortApplications(merged).map((a) => a.id), t, keepTimestamp);
       const saved = commit({ applications: ranked }, { persist: true });
 
-      const touched = [...fresh, ...updates.values()];
+      const touched = [...imported.values(), ...separate, ...updates.values()];
       return {
-        added: fresh.length,
+        added: imported.size + separate.length,
         updated: updates.size,
-        kept: conflicts.length - updates.size,
         incomplete: touched.filter(isIncomplete).length,
         persisted: saved.ok,
       };

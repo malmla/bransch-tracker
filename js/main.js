@@ -210,13 +210,13 @@ export function startApp() {
     busy(importButton, true);
     try {
       const imported = await importWorkbook(file);
-      const filenameSaved = rememberImportedFilename(file.name);
       const { fresh, conflicts, unchanged } = planImport(
         store.getState().applications,
         imported,
       );
 
       if (!fresh.length && !conflicts.length) {
+        const filenameSaved = rememberImportedFilename(file.name);
         status.show(
           [
             `${unchanged.length} ansökningar var redan identiska. Inga ändringar gjordes.`,
@@ -230,21 +230,24 @@ export function startApp() {
 
       let choices = [];
       if (conflicts.length) {
-        choices = await conflictDialog.ask(conflicts);
+        const namesInUse = [
+          ...store.getState().applications.map((app) => app.company),
+          ...fresh.map((app) => app.company),
+        ];
+        choices = await conflictDialog.ask(conflicts, namesInUse);
         if (!choices) {
           status.show(["Importen avbröts. Inga ändringar gjordes."]);
           return;
         }
       }
-
       const result = store.applyImport(fresh, conflicts, choices);
       if (!result.persisted) return;
+      if (!result.persisted) return;
+      const filenameSaved = rememberImportedFilename(file.name);
       const messages = [
         `${result.added} nya ansökningar importerades.`,
         result.updated &&
           `${result.updated} befintliga ansökningar uppdaterades från Excel.`,
-        result.kept &&
-          `${result.kept} befintliga ansökningar behölls oförändrade.`,
         unchanged.length &&
           `${unchanged.length} identiska ansökningar lämnades oförändrade.`,
         result.incomplete &&

@@ -120,12 +120,67 @@ test("company matching ignores case and whitespace; selected Excel conflicts pre
   assert.equal(fresh.length, 1);
   assert.equal(conflicts.length, 1);
   assert.equal(unchanged.length, 1);
-  const result = store.applyImport(fresh, conflicts, ["excel"]);
-  assert.deepEqual([result.added, result.updated, result.kept], [1, 1, 0]);
+  const result = store.applyImport(fresh, conflicts, [{ action: "update" }]);
+  assert.deepEqual([result.added, result.updated], [1, 1]);
   const ikea = store.getState().applications.find((app) => app.company === "ikea");
   assert.equal(ikea.id, existing.id);
   assert.equal(ikea.createdAt, existing.createdAt);
   assert.equal(ikea.city, "Stockholm");
+});
+
+test("import planning groups duplicate company rows and treats exact rows as unchanged", () => {
+  const first = {
+    id: "first-id",
+    rank: 1,
+    company: "Acme",
+    city: "Stockholm",
+    contactPerson: "",
+    email: "",
+    phone: "",
+    motivation: "",
+    notes: "",
+  };
+  const second = { ...first, id: "second-id", city: "Göteborg" };
+  const { fresh, conflicts, unchanged } = planImport([], [
+    first,
+    { ...first, id: "same-data-id", company: " ACME " },
+    second,
+  ]);
+  assert.equal(fresh.length, 1);
+  assert.equal(unchanged.length, 1);
+  assert.equal(conflicts.length, 1);
+  assert.equal(conflicts[0].existing.id, first.id);
+});
+
+test("manual entries require a distinct company name for an existing company", () => {
+  const store = createTestStore();
+  store.load();
+  store.saveApplication({ company: "Acme" });
+
+  const duplicate = store.saveApplication({ company: " ACME " });
+  assert.equal(duplicate.ok, false);
+  assert.match(duplicate.errors.company, /avdelning/i);
+  assert.equal(store.saveApplication({ company: "Acme - Marknad" }).ok, true);
+  assert.equal(store.getState().applications.length, 2);
+});
+
+test("import can create a separately named entry instead of updating an existing one", () => {
+  const store = createTestStore();
+  store.load();
+  store.saveApplication({ company: "Acme", city: "Stockholm" });
+  const existing = store.getState().applications[0];
+  const row = { ...existing, id: "excel-id", company: "Acme", city: "Göteborg" };
+
+  const result = store.applyImport([], [{ existing, row }], [
+    { action: "new", company: "Acme - Göteborg" },
+  ]);
+
+  assert.equal(result.added, 1);
+  assert.equal(result.updated, 0);
+  assert.deepEqual(
+    sortApplications(store.getState().applications).map(({ company, city }) => [company, city]),
+    [["Acme", "Stockholm"], ["Acme - Göteborg", "Göteborg"]],
+  );
 });
 
 test("filters combine with AND and rank colors honor the 50-application threshold", () => {
