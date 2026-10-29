@@ -15,7 +15,7 @@ import {
 } from "./services/excel.js";
 import { createStorage } from "./services/storage.js";
 import { createStore } from "./state/store.js";
-import { writeBlobToFile } from "./utils/download.js";
+import { downloadBlob, writeBlobToFile } from "./utils/download.js";
 import { must } from "./utils/dom.js";
 
 const STORAGE_KEY = "lia-applications";
@@ -305,24 +305,19 @@ export function startApp() {
     }
     busy(exportButton, true);
     try {
-      if (typeof window.showSaveFilePicker !== "function") {
-        status.show(
-          [
-            "Den här webbläsaren kan inte öppna en spara-dialog. Använd en webbläsare med stöd för filsystemets spara-dialog.",
-          ],
-          "error",
-        );
-        return;
-      }
       const filename =
         importedFilename.replace(/\.xlsx?$/i, ".xlsx") ||
         "lia-ansokningar.xlsx";
-      const fileHandle = await window.showSaveFilePicker({
-        ...excelPickerOptions,
-        suggestedName: filename,
-      });
+      const fileHandle =
+        typeof window.showSaveFilePicker === "function"
+          ? await window.showSaveFilePicker({
+              ...excelPickerOptions,
+              suggestedName: filename,
+            })
+          : null;
       const workbook = await exportWorkbook(applications);
-      await writeBlobToFile(fileHandle, workbook);
+      if (fileHandle) await writeBlobToFile(fileHandle, workbook);
+      else downloadBlob(workbook, filename);
       status.clear();
     } catch (error) {
       if (error.name === "AbortError") return;
