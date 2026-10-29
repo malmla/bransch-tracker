@@ -8,3 +8,9 @@ export function downloadBlob(blob, filename) {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
+
+export async function writeBlobToFile(fileHandle, blob) {
+  const writable = await fileHandle.createWritable();
+  await writable.write(blob);
+  await writable.close();
+}

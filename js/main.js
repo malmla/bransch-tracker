@@ -8,10 +8,14 @@ import { createThemeToggle } from "./components/themeToggle.js";
 import { isFiltering, matchesFilters } from "./model/filters.js";
 import { planImport } from "./model/importPlan.js";
 import { sortApplications, tierFor } from "./model/ranking.js";
-import { exportWorkbook, ExcelError, importWorkbook } from "./services/excel.js";
+import {
+  exportWorkbook,
+  ExcelError,
+  importWorkbook,
+} from "./services/excel.js";
 import { createStorage } from "./services/storage.js";
 import { createStore } from "./state/store.js";
-import { downloadBlob } from "./utils/download.js";
+import { downloadBlob, writeBlobToFile } from "./utils/download.js";
 import { must } from "./utils/dom.js";
 
 const STORAGE_KEY = "lia-applications";
@@ -23,11 +27,17 @@ export function startApp() {
   const store = createStore({
     storage: createStorage(STORAGE_KEY),
     onSaveError: () =>
-      status.show(["Ändringen kunde inte sparas i webbläsaren (lagringen är full eller blockerad). Exportera till Excel för att inte förlora data."], "error"),
+      status.show(
+        [
+          "Ändringen kunde inte sparas i webbläsaren (lagringen är full eller blockerad). Exportera till Excel för att inte förlora data.",
+        ],
+        "error",
+      ),
   });
 
   createThemeToggle(must("theme-toggle"), {
-    onError: () => status.show(["Temainställningen kunde inte sparas lokalt."], "error"),
+    onError: () =>
+      status.show(["Temainställningen kunde inte sparas lokalt."], "error"),
   });
   const dashboard = createDashboard(must("dashboard"));
 
@@ -60,7 +70,8 @@ export function startApp() {
     },
     onDelete(id) {
       const app = store.getState().applications.find((a) => a.id === id);
-      if (!app || !window.confirm(`Ta bort ${app.company || "företaget"}?`)) return;
+      if (!app || !window.confirm(`Ta bort ${app.company || "företaget"}?`))
+        return;
       store.remove(id);
       if (form.getEditingId() === id) form.reset();
       announce("Ansökan borttagen.");
@@ -69,7 +80,9 @@ export function startApp() {
     onMove(id, targetId, after) {
       const rank = store.move(id, targetId, after);
       if (rank !== null) {
-        const name = store.getState().applications.find((a) => a.id === id)?.company || "Företaget";
+        const name =
+          store.getState().applications.find((a) => a.id === id)?.company ||
+          "Företaget";
         announce(`${name} flyttad till rang ${rank}.`);
       }
     },
@@ -99,36 +112,66 @@ export function startApp() {
 
   const problem = store.load();
   if (problem === "corrupt") {
-    status.show(["Sparad data kunde inte läsas och en säkerhetskopia har sparats i webbläsaren. Listan startade tom."], "error");
+    status.show(
+      [
+        "Sparad data kunde inte läsas och en säkerhetskopia har sparats i webbläsaren. Listan startade tom.",
+      ],
+      "error",
+    );
   } else if (problem === "corrupt-backup-failed") {
-    status.show(["Sparad data kunde inte läsas och säkerhetskopian kunde inte sparas. Listan startade tom."], "error");
+    status.show(
+      [
+        "Sparad data kunde inte läsas och säkerhetskopian kunde inte sparas. Listan startade tom.",
+      ],
+      "error",
+    );
   } else if (problem === "migration-save-failed") {
-    status.show(["Befintliga ansökningar kunde läsas, men uppdateringen av det lokala lagringsformatet kunde inte sparas."], "error");
+    status.show(
+      [
+        "Befintliga ansökningar kunde läsas, men uppdateringen av det lokala lagringsformatet kunde inte sparas.",
+      ],
+      "error",
+    );
   } else if (problem === "unavailable") {
-    status.show(["LocalStorage är inte tillgängligt. Ändringar sparas inte när du lämnar sidan."], "error");
+    status.show(
+      [
+        "LocalStorage är inte tillgängligt. Ändringar sparas inte när du lämnar sidan.",
+      ],
+      "error",
+    );
   }
 
   const importButton = must("import-btn");
   const exportButton = must("export-btn");
   const fileInput = must("import-file");
   const conflictDialog = createConflictDialog(must("conflict-dialog"));
+  const excelPickerOptions = {
+    id: "lia-excel",
+    types: [
+      {
+        description: "Excel",
+        accept: {
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+            ".xlsx",
+          ],
+        },
+      },
+    ],
+  };
 
   const busy = (button, on) => {
     button.disabled = on;
     button.setAttribute("aria-busy", String(on));
   };
 
-  importButton.addEventListener("click", () => fileInput.click());
-
-  fileInput.addEventListener("change", async () => {
-    const file = fileInput.files[0];
-    fileInput.value = "";
-    if (!file) return;
-
+  async function importFile(file) {
     busy(importButton, true);
     try {
       const imported = await importWorkbook(file);
-      const { fresh, conflicts } = planImport(store.getState().applications, imported);
+      const { fresh, conflicts } = planImport(
+        store.getState().applications,
+        imported,
+      );
 
       let choices = [];
       if (conflicts.length) {
@@ -144,14 +187,18 @@ export function startApp() {
       status.show(
         [
           `${result.added} nya ansökningar importerades.`,
-          result.updated && `${result.updated} befintliga ansökningar uppdaterades från Excel.`,
-          result.kept && `${result.kept} befintliga ansökningar behölls oförändrade.`,
-          result.incomplete && `${result.incomplete} har tomma fält, markerade med "saknas" i listan.`,
+          result.updated &&
+            `${result.updated} befintliga ansökningar uppdaterades från Excel.`,
+          result.kept &&
+            `${result.kept} befintliga ansökningar behölls oförändrade.`,
+          result.incomplete &&
+            `${result.incomplete} har tomma fält, markerade med "saknas" i listan.`,
         ].filter(Boolean),
-        "success"
+        "success",
       );
     } catch (error) {
-      if (error instanceof ExcelError) status.show([error.message, ...error.details], "error");
+      if (error instanceof ExcelError)
+        status.show([error.message, ...error.details], "error");
       else {
         console.error(error);
         status.show(["Importen misslyckades oväntat. Försök igen."], "error");
@@ -159,6 +206,35 @@ export function startApp() {
     } finally {
       busy(importButton, false);
     }
+  }
+
+  importButton.addEventListener("click", async () => {
+    if (typeof window.showOpenFilePicker !== "function") {
+      fileInput.click();
+      return;
+    }
+
+    busy(importButton, true);
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        ...excelPickerOptions,
+        multiple: false,
+      });
+      await importFile(await handle.getFile());
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error(error);
+        status.show(["Importen kunde inte öppnas. Försök igen."], "error");
+      }
+    } finally {
+      busy(importButton, false);
+    }
+  });
+
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    fileInput.value = "";
+    if (file) await importFile(file);
   });
 
   exportButton.addEventListener("click", async () => {
@@ -169,11 +245,28 @@ export function startApp() {
     }
     busy(exportButton, true);
     try {
-      downloadBlob(await exportWorkbook(applications), "lia-ansokningar.xlsx");
+      const fileHandle =
+        typeof window.showSaveFilePicker === "function"
+          ? await window.showSaveFilePicker({
+              ...excelPickerOptions,
+              suggestedName: "lia-ansokningar.xlsx",
+            })
+          : null;
+      const workbook = await exportWorkbook(applications);
+      if (fileHandle) await writeBlobToFile(fileHandle, workbook);
+      else downloadBlob(workbook, "lia-ansokningar.xlsx");
       status.clear();
     } catch (error) {
+      if (error.name === "AbortError") return;
       console.error(error);
-      status.show([error instanceof ExcelError ? error.message : "Exporten misslyckades. Försök igen."], "error");
+      status.show(
+        [
+          error instanceof ExcelError
+            ? error.message
+            : "Exporten misslyckades. Försök igen.",
+        ],
+        "error",
+      );
     } finally {
       busy(exportButton, false);
     }
