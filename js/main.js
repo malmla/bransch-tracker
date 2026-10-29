@@ -335,11 +335,21 @@ export function startApp() {
     }
     busy(exportButton, true);
     try {
-      const filename =
-        importedFilename.replace(/\.xlsx?$/i, ".xlsx") ||
-        "lia-ansokningar.xlsx";
+      const now = new Date();
+      const timestamp = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0"),
+        String(now.getHours()).padStart(2, "0"),
+        String(now.getMinutes()).padStart(2, "0"),
+      ].join("-");
+      const hasSaveFilePicker = typeof window.showSaveFilePicker === "function";
+      const defaultFilename = `bransch-${timestamp}.xlsx`;
+      const filename = hasSaveFilePicker
+        ? importedFilename.replace(/\.xlsx?$/i, ".xlsx") || defaultFilename
+        : defaultFilename;
       const fileHandle =
-        typeof window.showSaveFilePicker === "function"
+        hasSaveFilePicker
           ? await window.showSaveFilePicker({
               ...excelPickerOptions,
               suggestedName: filename,
