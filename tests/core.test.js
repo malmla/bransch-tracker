@@ -199,6 +199,18 @@ test("filters combine with AND and rank colors honor the 50-application threshol
   assert.equal(tierFor(6, 50), null);
 });
 
+test("company filter matches case-insensitive substrings and combines with other filters", () => {
+  const filters = createFilters();
+  filters.company = "kea";
+  assert.equal(matchesFilters({ company: "IKEA", email: "", phone: "" }, filters), true);
+  assert.equal(matchesFilters({ company: "IKEA Sverige", email: "", phone: "" }, filters), true);
+  assert.equal(matchesFilters({ company: "Acme", email: "", phone: "" }, filters), false);
+
+  filters.email = "has";
+  assert.equal(matchesFilters({ company: "IKEA", email: "info@ikea.se" }, filters), true);
+  assert.equal(matchesFilters({ company: "IKEA", email: "" }, filters), false);
+});
+
 test("dashboard grades company, named-contact and top-list goals", () => {
   const applications = Array.from({ length: 50 }, (_, index) => ({
     id: `id-${index}`,
