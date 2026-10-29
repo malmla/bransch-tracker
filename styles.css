@@ -187,6 +187,12 @@ body {
   font-size: clamp(1.4rem, 4vw, 1.8rem);
 }
 
+.version-tracker {
+  margin: .25rem 0 0;
+  color: rgba(255, 255, 255, .85);
+  font-size: .8rem;
+}
+
 .theme-toggle {
   position: absolute;
   top: .75rem;

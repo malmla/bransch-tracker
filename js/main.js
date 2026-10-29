@@ -21,8 +21,38 @@ import { must } from "./utils/dom.js";
 const STORAGE_KEY = "lia-applications";
 const EXPORT_REMINDER_KEY = "lia-export-reminder";
 const EXPORT_FILENAME_KEY = "lia-export-filename";
+const REPOSITORY_API_URL = "https://api.github.com/repos/malmla/bransch-tracker";
+
+async function updateVersionTracker(element) {
+  try {
+    const response = await fetch(REPOSITORY_API_URL, {
+      headers: { Accept: "application/vnd.github+json" },
+      cache: "no-cache",
+    });
+    if (!response.ok) throw new Error(`GitHub API returned ${response.status}.`);
+
+    const { pushed_at: pushedAt } = await response.json();
+    if (typeof pushedAt !== "string") {
+      throw new Error("GitHub API returned an invalid push date.");
+    }
+    const timestamp = Date.parse(pushedAt);
+    if (!Number.isFinite(timestamp)) {
+      throw new Error("GitHub API returned an invalid push date.");
+    }
+
+    const formatted = new Intl.DateTimeFormat("sv-SE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(timestamp);
+    element.textContent = `Senaste push: ${formatted}`;
+  } catch (error) {
+    console.error("Kunde inte hämta senaste push från GitHub.", error);
+    element.textContent = "Senaste push: kunde inte hämtas";
+  }
+}
 
 export function startApp() {
+  updateVersionTracker(must("version-tracker"));
   const status = createStatus(must("status"));
   const announce = createAnnouncer(must("announcer"));
 
