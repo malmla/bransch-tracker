@@ -419,6 +419,20 @@ p.status {
   gap: .5rem;
 }
 
+.export-reminder {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--muted);
+  font-size: .875rem;
+  cursor: pointer;
+}
+
+.export-reminder input {
+  margin: 0;
+  accent-color: var(--primary);
+}
+
 .list {
   list-style: none;
   margin: 0;

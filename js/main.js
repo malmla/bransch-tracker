@@ -19,6 +19,7 @@ import { downloadBlob, writeBlobToFile } from "./utils/download.js";
 import { must } from "./utils/dom.js";
 
 const STORAGE_KEY = "lia-applications";
+const EXPORT_REMINDER_KEY = "lia-export-reminder";
 
 export function startApp() {
   const status = createStatus(must("status"));
@@ -143,8 +144,31 @@ export function startApp() {
 
   const importButton = must("import-btn");
   const exportButton = must("export-btn");
+  const exportReminder = must("export-reminder");
   const fileInput = must("import-file");
   const conflictDialog = createConflictDialog(must("conflict-dialog"));
+  try {
+    exportReminder.checked = localStorage.getItem(EXPORT_REMINDER_KEY) !== "false";
+  } catch (error) {
+    console.error(error);
+    status.show(["Påminnelseinställningen kunde inte läsas från webbläsaren."], "error");
+  }
+
+  exportReminder.addEventListener("change", () => {
+    try {
+      localStorage.setItem(EXPORT_REMINDER_KEY, String(exportReminder.checked));
+    } catch (error) {
+      console.error(error);
+      status.show(["Påminnelseinställningen kunde inte sparas i webbläsaren."], "error");
+    }
+  });
+
+  window.addEventListener("beforeunload", (event) => {
+    if (!exportReminder.checked || !store.getState().applications.length) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
+
   const excelPickerOptions = {
     id: "lia-excel",
     types: [
