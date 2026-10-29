@@ -654,7 +654,7 @@ p.status {
   box-shadow: var(--shadow);
   border-top: 3px solid var(--primary);
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
 }
 
 .stat dt, .stat dd {
@@ -671,6 +671,56 @@ p.status {
 .stat-label {
   font-size: .85rem;
   color: var(--muted);
+}
+
+.stat-detail {
+  margin: .25rem 0 0;
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.stat dd.stat-detail {
+  margin-top: .25rem;
+}
+
+.stat-grade {
+  margin: .4rem 0 0;
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+.stat dd.stat-grade {
+  margin-top: .4rem;
+}
+
+.stat[data-status="below"] {
+  background: var(--danger-bg);
+  border-top-color: var(--danger);
+}
+
+.stat[data-status="below"] .stat-value,
+.stat[data-status="below"] .stat-grade {
+  color: var(--danger);
+}
+
+.stat[data-status="pass"] {
+  background: var(--gold-bg);
+  border-top-color: var(--gold);
+}
+
+.stat[data-status="pass"] .stat-value,
+.stat[data-status="pass"] .stat-grade {
+  color: var(--gold-text);
+}
+
+.stat[data-status="distinction"] {
+  background: var(--success-bg);
+  border-top-color: var(--success);
+}
+
+.stat[data-status="distinction"] .stat-value,
+.stat[data-status="distinction"] .stat-grade {
+  color: var(--success);
 }
 
 .filters {

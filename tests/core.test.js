@@ -4,6 +4,7 @@ import { isIncomplete, validateValues } from "../js/model/application.js";
 import { createFilters, matchesFilters } from "../js/model/filters.js";
 import { planImport } from "../js/model/importPlan.js";
 import { sortApplications, tierFor } from "../js/model/ranking.js";
+import { getDashboardMetrics } from "../js/components/dashboard.js";
 import { createStorage } from "../js/services/storage.js";
 import { createStore } from "../js/state/store.js";
 
@@ -196,6 +197,46 @@ test("filters combine with AND and rank colors honor the 50-application threshol
   assert.equal(tierFor(4, 49), null);
   assert.equal(tierFor(5, 50), "premium");
   assert.equal(tierFor(6, 50), null);
+});
+
+test("dashboard grades company, named-contact and top-list goals", () => {
+  const applications = Array.from({ length: 50 }, (_, index) => ({
+    id: `id-${index}`,
+    rank: index + 1,
+    company: `Företag ${index + 1}`,
+    contactPerson:
+      index < 30 ? (index === 0 ? "info@example.se" : `Person ${index}`) : "",
+    email: index === 1 ? "info@example.se" : "",
+    motivation: index < 5 ? "Presentation och motivering" : "",
+  }));
+  const vg = getDashboardMetrics(applications);
+  assert.deepEqual(vg, {
+    companies: { value: 50, target: 50, grade: "distinction" },
+    contacts: { value: 29, target: 30, grade: "pass" },
+    top: { topThree: 3, topFive: 5, value: 5, target: 5, grade: "distinction" },
+  });
+
+  const pass = getDashboardMetrics(applications.slice(0, 30).map((app, index) => ({
+    ...app,
+    contactPerson: index < 15 ? `Person ${index}` : "",
+    motivation: index < 3 ? "Presentation och motivering" : "",
+  })));
+  assert.deepEqual(pass, {
+    companies: { value: 30, target: 50, grade: "pass" },
+    contacts: { value: 15, target: 30, grade: "pass" },
+    top: { topThree: 3, topFive: 3, value: 3, target: 5, grade: "pass" },
+  });
+
+  const below = getDashboardMetrics(applications.slice(0, 29).map((app) => ({
+    ...app,
+    contactPerson: "",
+    motivation: "",
+  })));
+  assert.deepEqual(below, {
+    companies: { value: 29, target: 30, grade: "below" },
+    contacts: { value: 0, target: 15, grade: "below" },
+    top: { topThree: 0, topFive: 0, value: 0, target: 3, grade: "below" },
+  });
 });
 
 test("store supports at least 250 records and keeps their order ranks unique", () => {
