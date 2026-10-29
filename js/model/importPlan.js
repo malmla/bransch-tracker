@@ -1,4 +1,11 @@
+import { cleanValues, FIELDS } from "./application.js";
 import { normalizeName } from "../utils/text.js";
+
+function isExactMatch(existing, row) {
+  const existingValues = cleanValues(existing);
+  const importedValues = cleanValues(row);
+  return FIELDS.every((field) => existingValues[field] === importedValues[field]);
+}
 
 /**
  * Splits imported rows into brand new companies and conflicts with existing ones.
@@ -12,10 +19,12 @@ export function planImport(existing, imported) {
   }
   const fresh = [];
   const conflicts = [];
+  const unchanged = [];
   for (const row of imported) {
     const match = byName.get(normalizeName(row.company));
-    if (match) conflicts.push({ existing: match, row });
+    if (match && isExactMatch(match, row)) unchanged.push({ existing: match, row });
+    else if (match) conflicts.push({ existing: match, row });
     else fresh.push(row);
   }
-  return { fresh, conflicts };
+  return { fresh, conflicts, unchanged };
 }

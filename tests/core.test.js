@@ -113,11 +113,13 @@ test("company matching ignores case and whitespace; selected Excel conflicts pre
   const existing = store.getState().applications[0];
   const imported = [
     { ...existing, id: "new-id", company: " ikea ", city: "Stockholm", createdAt: "excel-created", updatedAt: "excel-updated" },
+    { ...existing, id: "identical-id", createdAt: "excel-created", updatedAt: "excel-updated" },
     { id: "fresh-id", rank: null, company: "Volvo", city: "", contactPerson: "", email: "", phone: "", motivation: "", notes: "", createdAt: "new", updatedAt: "new" },
   ];
-  const { fresh, conflicts } = planImport(store.getState().applications, imported);
+  const { fresh, conflicts, unchanged } = planImport(store.getState().applications, imported);
   assert.equal(fresh.length, 1);
   assert.equal(conflicts.length, 1);
+  assert.equal(unchanged.length, 1);
   const result = store.applyImport(fresh, conflicts, ["excel"]);
   assert.deepEqual([result.added, result.updated, result.kept], [1, 1, 0]);
   const ikea = store.getState().applications.find((app) => app.company === "ikea");

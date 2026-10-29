@@ -15,11 +15,12 @@ import {
 } from "./services/excel.js";
 import { createStorage } from "./services/storage.js";
 import { createStore } from "./state/store.js";
-import { downloadBlob, writeBlobToFile } from "./utils/download.js";
+import { writeBlobToFile } from "./utils/download.js";
 import { must } from "./utils/dom.js";
 
 const STORAGE_KEY = "lia-applications";
 const EXPORT_REMINDER_KEY = "lia-export-reminder";
+const EXPORT_FILENAME_KEY = "lia-export-filename";
 
 export function startApp() {
   const status = createStatus(must("status"));
@@ -147,11 +148,28 @@ export function startApp() {
   const exportReminder = must("export-reminder");
   const fileInput = must("import-file");
   const conflictDialog = createConflictDialog(must("conflict-dialog"));
+  let importedFilename = "";
   try {
     exportReminder.checked = localStorage.getItem(EXPORT_REMINDER_KEY) !== "false";
   } catch (error) {
     console.error(error);
     status.show(["Påminnelseinställningen kunde inte läsas från webbläsaren."], "error");
+  }
+  try {
+    importedFilename = localStorage.getItem(EXPORT_FILENAME_KEY) ?? "";
+  } catch (error) {
+    console.error(error);
+    status.show(["Det importerade filnamnet kunde inte läsas från webbläsaren."], "error");
+  }
+  function rememberImportedFilename(filename) {
+    importedFilename = filename;
+    try {
+      localStorage.setItem(EXPORT_FILENAME_KEY, filename);
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
   }
 
   exportReminder.addEventListener("change", () => {
@@ -192,10 +210,23 @@ export function startApp() {
     busy(importButton, true);
     try {
       const imported = await importWorkbook(file);
-      const { fresh, conflicts } = planImport(
+      const filenameSaved = rememberImportedFilename(file.name);
+      const { fresh, conflicts, unchanged } = planImport(
         store.getState().applications,
         imported,
       );
+
+      if (!fresh.length && !conflicts.length) {
+        status.show(
+          [
+            `${unchanged.length} ansökningar var redan identiska. Inga ändringar gjordes.`,
+            !filenameSaved &&
+              "Det importerade filnamnet kunde inte sparas för framtida exporter.",
+          ].filter(Boolean),
+          filenameSaved ? "success" : "error",
+        );
+        return;
+      }
 
       let choices = [];
       if (conflicts.length) {
@@ -208,18 +239,20 @@ export function startApp() {
 
       const result = store.applyImport(fresh, conflicts, choices);
       if (!result.persisted) return;
-      status.show(
-        [
-          `${result.added} nya ansökningar importerades.`,
-          result.updated &&
-            `${result.updated} befintliga ansökningar uppdaterades från Excel.`,
-          result.kept &&
-            `${result.kept} befintliga ansökningar behölls oförändrade.`,
-          result.incomplete &&
-            `${result.incomplete} har tomma fält, markerade med "saknas" i listan.`,
-        ].filter(Boolean),
-        "success",
-      );
+      const messages = [
+        `${result.added} nya ansökningar importerades.`,
+        result.updated &&
+          `${result.updated} befintliga ansökningar uppdaterades från Excel.`,
+        result.kept &&
+          `${result.kept} befintliga ansökningar behölls oförändrade.`,
+        unchanged.length &&
+          `${unchanged.length} identiska ansökningar lämnades oförändrade.`,
+        result.incomplete &&
+          `${result.incomplete} har tomma fält, markerade med "saknas" i listan.`,
+        !filenameSaved &&
+          "Det importerade filnamnet kunde inte sparas för framtida exporter.",
+      ].filter(Boolean);
+      status.show(messages, filenameSaved ? "success" : "error");
     } catch (error) {
       if (error instanceof ExcelError)
         status.show([error.message, ...error.details], "error");
@@ -269,16 +302,24 @@ export function startApp() {
     }
     busy(exportButton, true);
     try {
-      const fileHandle =
-        typeof window.showSaveFilePicker === "function"
-          ? await window.showSaveFilePicker({
-              ...excelPickerOptions,
-              suggestedName: "lia-ansokningar.xlsx",
-            })
-          : null;
+      if (typeof window.showSaveFilePicker !== "function") {
+        status.show(
+          [
+            "Den här webbläsaren kan inte öppna en spara-dialog. Använd en webbläsare med stöd för filsystemets spara-dialog.",
+          ],
+          "error",
+        );
+        return;
+      }
+      const filename =
+        importedFilename.replace(/\.xlsx?$/i, ".xlsx") ||
+        "lia-ansokningar.xlsx";
+      const fileHandle = await window.showSaveFilePicker({
+        ...excelPickerOptions,
+        suggestedName: filename,
+      });
       const workbook = await exportWorkbook(applications);
-      if (fileHandle) await writeBlobToFile(fileHandle, workbook);
-      else downloadBlob(workbook, "lia-ansokningar.xlsx");
+      await writeBlobToFile(fileHandle, workbook);
       status.clear();
     } catch (error) {
       if (error.name === "AbortError") return;
