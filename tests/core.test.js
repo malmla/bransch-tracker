@@ -80,6 +80,32 @@ test("store creates, edits, reorders and removes applications with timestamps", 
   assert.equal(store.getState().applications.length, 2);
 });
 
+test("setting a rank moves other applications without creating duplicate ranks", () => {
+  const store = createTestStore();
+  store.load();
+  for (const company of ["IKEA", "Volvo", "Saab"]) store.saveApplication({ company });
+
+  assert.equal(store.saveApplication({ company: "Nytt företag", rank: "2" }).ok, true);
+  let apps = sortApplications(store.getState().applications);
+  assert.deepEqual(apps.map(({ company, rank }) => [company, rank]), [
+    ["IKEA", 1],
+    ["Nytt företag", 2],
+    ["Volvo", 3],
+    ["Saab", 4],
+  ]);
+  assert.equal(new Set(apps.map(({ rank }) => rank)).size, apps.length);
+
+  assert.equal(store.saveApplication({ company: "Saab", rank: "1" }, apps[3].id).ok, true);
+  apps = sortApplications(store.getState().applications);
+  assert.deepEqual(apps.map(({ company, rank }) => [company, rank]), [
+    ["Saab", 1],
+    ["IKEA", 2],
+    ["Nytt företag", 3],
+    ["Volvo", 4],
+  ]);
+  assert.equal(new Set(apps.map(({ rank }) => rank)).size, apps.length);
+});
+
 test("company matching ignores case and whitespace; selected Excel conflicts preserve identity", () => {
   const store = createTestStore();
   store.load();

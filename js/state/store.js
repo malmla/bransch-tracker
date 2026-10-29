@@ -49,14 +49,37 @@ export function createStore({ storage, now = () => new Date().toISOString(), onS
       const t = now();
       const clean = cleanValues(values);
       const apps = state.applications;
-      if (id && !apps.some((a) => a.id === id)) {
+      const current = id && apps.find((a) => a.id === id);
+      if (id && !current) {
         return { ok: false, errors: { _form: "Företaget finns inte längre och kan inte uppdateras." } };
       }
+      const previousRank = current?.rank ?? null;
       clean.rank ??= nextRank(apps, id);
 
-      const next = id
-        ? apps.map((a) => (a.id === id ? { ...a, ...clean, updatedAt: t } : a))
-        : [...apps, createApplication(clean, t)];
+      const targetApplication = id
+        ? { ...current, ...clean, updatedAt: t }
+        : createApplication(clean, t);
+      const target = id
+        ? apps.map((a) => (a.id === id ? targetApplication : a))
+        : [...apps, targetApplication];
+      const next = target.map((app) => {
+        if (app.id === targetApplication.id) return app;
+
+        let rank = app.rank;
+        if (!id && Number.isFinite(rank) && rank >= clean.rank) {
+          rank += 1;
+        } else if (id && Number.isFinite(previousRank) && Number.isFinite(rank)) {
+          if (clean.rank < previousRank && rank >= clean.rank && rank < previousRank) {
+            rank += 1;
+          } else if (clean.rank > previousRank && rank > previousRank && rank <= clean.rank) {
+            rank -= 1;
+          }
+        } else if (id && !Number.isFinite(previousRank) && Number.isFinite(rank) && rank >= clean.rank) {
+          rank += 1;
+        }
+
+        return rank === app.rank ? app : { ...app, rank, updatedAt: t };
+      });
       const saved = commit({ applications: next }, { persist: true });
       return { ok: true, persisted: saved.ok };
     },
