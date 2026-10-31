@@ -68,10 +68,6 @@ export function startApp() {
       ),
   });
 
-  createThemeToggle(must("theme-toggle"), {
-    onError: () =>
-      status.show(["Temainställningen kunde inte sparas lokalt."], "error"),
-  });
   const analytics = createAnalyticsConsent(
     must("analytics-toggle"),
     must("analytics-consent-dialog"),
@@ -91,6 +87,11 @@ export function startApp() {
       },
     },
   );
+  createThemeToggle(must("theme-toggle"), {
+    onError: () =>
+      status.show(["Temainställningen kunde inte sparas lokalt."], "error"),
+    onToggle: () => analytics.trackFeature("theme_toggle"),
+  });
   const dashboard = createDashboard(must("dashboard"));
 
   const form = createApplicationForm({
@@ -101,7 +102,10 @@ export function startApp() {
     summary: must("form-error"),
     onSubmit(values, id) {
       const result = store.saveApplication(values, id);
-      if (result.ok) announce(id ? "Ansökan uppdaterad." : "Ansökan sparad.");
+      if (result.ok) {
+        analytics.trackFeature(id ? "application_edit" : "application_add");
+        announce(id ? "Ansökan uppdaterad." : "Ansökan sparad.");
+      }
       return result;
     },
   });
@@ -110,7 +114,11 @@ export function startApp() {
     resetButton: must("filter-reset"),
     info: must("filter-info"),
     onChange: (field, mode) => store.setFilter(field, mode),
-    onReset: () => store.resetFilters(),
+    onUse: (field, mode) => analytics.trackFilter(field, mode),
+    onReset: () => {
+      store.resetFilters();
+      analytics.trackFeature("filter_reset");
+    },
   });
 
   const list = createApplicationList(must("list"), {
@@ -125,6 +133,7 @@ export function startApp() {
       if (!app || !window.confirm(`Ta bort ${app.company || "företaget"}?`))
         return;
       store.remove(id);
+      analytics.trackFeature("application_delete");
       if (form.getEditingId() === id) form.reset();
       announce("Ansökan borttagen.");
       must("list-heading").focus();
@@ -132,6 +141,7 @@ export function startApp() {
     onMove(id, targetId, after) {
       const rank = store.move(id, targetId, after);
       if (rank !== null) {
+        analytics.trackFeature("reorder");
         const name =
           store.getState().applications.find((a) => a.id === id)?.company ||
           "Företaget";

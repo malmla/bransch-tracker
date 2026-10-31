@@ -10,7 +10,10 @@ function readStoredTheme() {
 }
 
 /** Light/dark toggle. Follows the system setting until the user picks one explicitly. */
-export function createThemeToggle(button, { onError = () => {} } = {}) {
+export function createThemeToggle(
+  button,
+  { onError = () => {}, onToggle = () => {} } = {},
+) {
   const root = document.documentElement;
   const system = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -26,6 +29,7 @@ export function createThemeToggle(button, { onError = () => {} } = {}) {
       onError(error);
     }
     sync();
+    onToggle();
   });
   system.addEventListener("change", sync);
 

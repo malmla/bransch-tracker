@@ -1,13 +1,20 @@
 /** Filter controls opt in with data-filter="<field>". */
-export function createFilterBar(root, { resetButton, info, onChange, onReset }) {
+export function createFilterBar(
+  root,
+  { resetButton, info, onChange, onUse, onReset },
+) {
   const selects = [...root.querySelectorAll("select[data-filter]")];
   const inputs = [...root.querySelectorAll("input[data-filter]")];
 
   for (const select of selects) {
-    select.addEventListener("change", () => onChange(select.dataset.filter, select.value));
+    select.addEventListener("change", () => {
+      onChange(select.dataset.filter, select.value);
+      onUse(select.dataset.filter, select.value);
+    });
   }
   for (const input of inputs) {
     input.addEventListener("input", () => onChange(input.dataset.filter, input.value));
+    input.addEventListener("change", () => onUse(input.dataset.filter));
   }
   resetButton.addEventListener("click", onReset);
 

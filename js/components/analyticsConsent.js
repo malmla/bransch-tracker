@@ -1,6 +1,21 @@
 const CONSENT_KEY = "lia-analytics-consent";
 const GTM_ID = "GTM-58ZHW293";
-const TRACKED_FEATURES = new Set(["import", "export"]);
+const TRACKED_FEATURES = new Set([
+  "import",
+  "export",
+  "application_add",
+  "application_edit",
+  "application_delete",
+  "filter_reset",
+  "reorder",
+  "theme_toggle",
+]);
+const FILTER_FIELDS = new Set(["company", "contactPerson", "email", "phone"]);
+const FILTER_MODES = new Map([
+  ["", "all"],
+  ["has", "has"],
+  ["missing", "missing"],
+]);
 
 function readConsent(onError) {
   try {
@@ -126,6 +141,19 @@ export function createAnalyticsConsent(toggle, dialog, { onError = () => {} } = 
     trackFeature(featureName) {
       if (!enabled || !TRACKED_FEATURES.has(featureName)) return;
       window.dataLayer.push({ event: "feature_used", feature_name: featureName });
+    },
+    trackFilter(field, mode) {
+      if (!enabled || !FILTER_FIELDS.has(field)) return;
+
+      if (mode === undefined && field !== "company") return;
+      const filterMode = mode === undefined ? "text" : FILTER_MODES.get(mode);
+      if (!filterMode) return;
+
+      window.dataLayer.push({
+        event: "filter_used",
+        filter_field: field,
+        filter_mode: filterMode,
+      });
     },
   };
 }
