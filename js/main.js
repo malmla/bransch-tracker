@@ -1,4 +1,5 @@
 import { createAnnouncer, createStatus } from "./components/feedback.js";
+import { createAnalyticsConsent } from "./components/analyticsConsent.js";
 import { createApplicationForm } from "./components/applicationForm.js";
 import { createApplicationList } from "./components/applicationList.js";
 import { createConflictDialog } from "./components/conflictDialog.js";
@@ -71,6 +72,25 @@ export function startApp() {
     onError: () =>
       status.show(["Temainställningen kunde inte sparas lokalt."], "error"),
   });
+  const analytics = createAnalyticsConsent(
+    must("analytics-toggle"),
+    must("analytics-consent-dialog"),
+    {
+      onError(error, cause) {
+        console.error(error);
+        status.show(
+          [
+            cause === "load"
+              ? "Google Tag Manager kunde inte laddas. Analys är avstängd."
+              : cause === "read"
+                ? "Analysinställningen kunde inte läsas. Analys är avstängd."
+                : "Analysinställningen kunde inte sparas. Analys är avstängd.",
+          ],
+          "error",
+        );
+      },
+    },
+  );
   const dashboard = createDashboard(must("dashboard"));
 
   const form = createApplicationForm({
@@ -240,6 +260,7 @@ export function startApp() {
     busy(importButton, true);
     try {
       const imported = await importWorkbook(file);
+      analytics.trackFeature("import");
       const { fresh, conflicts, unchanged } = planImport(
         store.getState().applications,
         imported,
@@ -358,6 +379,7 @@ export function startApp() {
       const workbook = await exportWorkbook(applications);
       if (fileHandle) await writeBlobToFile(fileHandle, workbook);
       else downloadBlob(workbook, filename);
+      analytics.trackFeature("export");
       status.clear();
     } catch (error) {
       if (error.name === "AbortError") return;

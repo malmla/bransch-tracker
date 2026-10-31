@@ -193,10 +193,16 @@ body {
   font-size: .8rem;
 }
 
-.theme-toggle {
+.header-settings {
   position: absolute;
   top: .75rem;
   right: .75rem;
+  display: grid;
+  gap: .4rem;
+}
+
+.theme-toggle,
+.analytics-toggle {
   font: inherit;
   font-size: .85rem;
   color: #fff;
@@ -207,15 +213,18 @@ body {
   cursor: pointer;
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.analytics-toggle:hover {
   background: rgba(255, 255, 255, .28);
 }
 
-.theme-toggle:focus-visible {
+.theme-toggle:focus-visible,
+.analytics-toggle:focus-visible {
   outline-color: #fff;
 }
 
-.theme-toggle[aria-pressed="true"] {
+.theme-toggle[aria-pressed="true"],
+.analytics-toggle[aria-checked="true"] {
   background: rgba(0, 0, 0, .3);
 }
 
@@ -831,9 +840,10 @@ p.status {
     flex: 1;
   }
 
-  .theme-toggle {
+  .header-settings {
     position: static;
-    margin-top: .75rem;
+    width: max-content;
+    margin: .75rem auto 0;
   }
 
   .app-header {

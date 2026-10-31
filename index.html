@@ -24,14 +24,25 @@
       <p class="version-tracker" id="version-tracker" aria-live="polite">
         Senaste push: hämtas ...
       </p>
-      <button
-        type="button"
-        class="theme-toggle"
-        id="theme-toggle"
-        aria-pressed="false"
-      >
-        <span aria-hidden="true">◐</span> Mörkt läge
-      </button>
+      <div class="header-settings">
+        <button
+          type="button"
+          class="theme-toggle"
+          id="theme-toggle"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">◐</span> Mörkt läge
+        </button>
+        <button
+          type="button"
+          class="analytics-toggle"
+          id="analytics-toggle"
+          role="switch"
+          aria-checked="false"
+        >
+          Analys: av
+        </button>
+      </div>
     </header>
 
     <main id="main">
@@ -315,6 +326,35 @@
           Fortsätt importen
         </button>
         <button type="button" class="btn" data-conflict-cancel>Avbryt</button>
+      </div>
+    </dialog>
+
+    <dialog
+      id="analytics-consent-dialog"
+      class="dialog"
+      aria-labelledby="analytics-consent-title"
+    >
+      <h2 id="analytics-consent-title" tabindex="-1">
+        Får jag använda din data för att lära mig GTM och GA4?
+      </h2>
+      <p>
+        Det här verktyget använder jag för att lära mig Google Analytics och
+        Google Tag Manager. Om du väljer ja mäter jag vilka funktioner som
+        används, till exempel filter och import/export. Det är frivilligt, och
+        verktyget fungerar även om du tackar nej.
+      </p>
+      <p>
+        Mätningen ska inte innehålla företagsnamn, kontaktuppgifter,
+        anteckningar eller innehållet i importerade filer. Google Analytics kan
+        också behandla tekniska uppgifter och identifierare.
+      </p>
+      <div class="actions dialog-footer">
+        <button type="button" class="btn" data-analytics-reject>
+          Nej tack
+        </button>
+        <button type="button" class="btn" data-analytics-accept>
+          Tillåt analys
+        </button>
       </div>
     </dialog>
 
